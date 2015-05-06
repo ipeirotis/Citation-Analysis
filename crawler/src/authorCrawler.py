@@ -128,7 +128,19 @@ citationsPerYearNode = driver.find_element_by_id("gsc_md_hist_b")
 print(citationsPerYearNode)
 '''
 
-driver = webdriver.Firefox()
+driver = None
+try: driver = webdriver.Firefox()
+except: pass
+try: driver = webdriver.Chrome()
+except: pass
+try: driver = webdriver.Ie()
+except: pass
+try: driver = webdriver.Opera()
+except: pass
+if not driver:
+    print('Cannot find a selenium driver')
+    exit(1)
+
 driver.implicitly_wait(1)
 driver.get(url)
 citationsPerYearNode = driver.find_element_by_id('gsc_g')
