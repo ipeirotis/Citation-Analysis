@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Citation Analysis</h1>
+<p>This is completely experimental; if you don't know what it is,
+  it's not useful for you.</p>
+<div class="modal-body">
+  {% from "includes/form_helpers.html" import render_field %}
+  <form id="author-form" class="well"
+        action="{{ action }}" method="post" accept-charset="utf-8">
+    <fieldset>
+      {{ form.hidden_tag() }}
+      {{ render_field(form.authorId) }}
+      <div>&nbsp;</div>
+      {{ form.submit }}
+    </fieldset>
+  </form>
+</div>
+{% if results is not none %}
+<hr />
+<pre>{{ results }}</pre>
+{% endif %}
+{% endblock content %}
