@@ -12,5 +12,5 @@ pandas==0.16.0
 
 Flask==0.10.1
 Flask-DebugToolbar==0.10.0
-flask-wtf=0.11
+flask-wtf==0.11
 jinja2==2.7.3
