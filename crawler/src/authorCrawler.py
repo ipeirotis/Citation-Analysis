@@ -1,9 +1,10 @@
 __author__ = 'anna'
 
 
-import requests # This command allows us to fetch URLs
+import urllib, urllib2, cookielib, traceback
+#import requests # This command allows us to fetch URLs
 from lxml import html # This module will allow us to parse the returned HTML/XML
-import pandas # To create a dataframe
+#import pandas # To create a dataframe
 import sys, datetime
 import publicationCrawler
 
@@ -32,18 +33,26 @@ def debug(*whatever):
 
 def authorCrawler(authorID, pubLimit=None):
     # Let's start by fetching the page, and parsing it
+    
+    cj = cookielib.CookieJar()
+    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
+    urllib2.install_opener(opener)    
     url = "https://scholar.google.com/citations?hl=en&user=%s&view_op=list_works&sortby=pubdate&pagesize=100" % (authorID)
-    headers = {'User-agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:29.0) Gecko/20100101 Firefox/29.0'}
-    response = requests.get(url, headers=headers,
-                            verify=False, allow_redirects=False)
-    if response.is_redirect:
-        print "Redirected to:"
-        print response.headers['location']
-        exit(1)
+    opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:29.0) Gecko/20100101 Firefox/29.0')]
+    opener.open(url)
+    f = opener.open(url)
+    doc = html.parse(f)
+    print doc
+    #headers = {'User-agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:29.0) Gecko/20100101 Firefox/29.0'}
+    #response = requests.get(url, headers=headers,
+    #                        verify=False, allow_redirects=False)
+    #if response.is_redirect:
+        #print "Redirected to:"
+        #print response.headers['location']
+        #exit(1)
         
-    # response = requests.get(url, verify="etc/ssl/certs/ca-certificates.crt") # get the html of that url
-    doc = html.fromstring(response.text) # parse it and create a document
-    debug(response)
+    #doc = html.fromstring(response.text) # parse it and create a document
+    #debug(response)
 
     # get author name
     authorNode = doc.find('.//div[@id="gsc_prf_in"]')
@@ -76,8 +85,8 @@ def authorCrawler(authorID, pubLimit=None):
     #debug(citationsNodeTable)
     citationIndexes = citationsNodeTable.xpath('.//tr[0<position()<4]/td[2]//text()')
 
-    totalCitations = citationIndexes[0]
-    h_index = citationIndexes[1]
+    totalCitations = int(citationIndexes[0])
+    h_index = int(citationIndexes[1])
     debug(totalCitations)
     debug(h_index)
 
@@ -108,11 +117,18 @@ def authorCrawler(authorID, pubLimit=None):
 
     # Get citations per year
     url_citations = "https://scholar.google.com/citations?hl=en&user=%s&view_op=citations_histogram" % (authorID)
+    opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:29.0) Gecko/20100101 Firefox/29.0')]
+    opener.open(url_citations)
+    f = opener.open(url_citations)
+    doc_citations = html.parse(f)
+    print doc_citations
+
+    #url_citations = "https://scholar.google.com/citations?hl=en&user=%s&view_op=citations_histogram" % (authorID)
     #headers = {'User-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.118 Safari/537.36'}
-    headers = {'User-agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:29.0) Gecko/20100101 Firefox/29.0'}
-    response = requests.get(url_citations, headers=headers, verify=False)
-    doc_citations = html.fromstring(response.text)
-    debug(response)
+    #headers = {'User-agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:29.0) Gecko/20100101 Firefox/29.0'}
+    #response = requests.get(url_citations, headers=headers, verify=False)
+    #doc_citations = html.fromstring(response.text)
+    #debug(response)
     #debug(doc_citations.text_content())
     #debug(doc_citations.xpath('.//*[@id="gsc_md_hist_b"]')[0])   #returns a div element
     doc_popup = doc_citations.xpath('.//*[@id="gsc_md_hist_b"]')[0]

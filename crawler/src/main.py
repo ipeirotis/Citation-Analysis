@@ -1,10 +1,15 @@
 """`main` is the top level module for your Flask application."""
 
+import fix_path
+
 # Import the Flask Framework
 from flask import Flask
 app = Flask('CitationAnalysis')
 # Note: We don't need to call run() since our application is embedded within
 # the App Engine WSGI application server.
+
+#Import authorCrawler
+import authorCrawler
 
 import settings
 app.config.from_object(settings.Development)
@@ -21,8 +26,11 @@ def index():
     form = AuthorForm(request.form)
     results = None
     if form.validate_on_submit():
-        results = "The author ID was: %s" % form.authorId.data
+        #results = "The author ID was: %s" % form.authorId.data
         # HERE THE AUTHOR CRAWLER SHOULD BE CALLED INSTEAD
+	author_obj = authorCrawler.authorCrawler(form.authorId.data,3)
+        #results = "Author details:\nName: %s." % author_obj.name
+        results = "Author details:\nName: %s \nTotal Citations: %d\nH_index: %d" % (author_obj.name, author_obj.totalCitations, author_obj.H_index)
     return render_template('index.html', form=form, action=url_for('index'),
                            results=results)
 

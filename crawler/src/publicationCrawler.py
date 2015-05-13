@@ -1,9 +1,9 @@
 __author__ = 'anna'
 
-
-import requests # This command allows us to fetch URLs
+import sys,urllib, urllib2, cookielib, traceback
+#import requests # This command allows us to fetch URLs
 from lxml import html # This module will allow us to parse the returned HTML/XML
-import pandas # To create a dataframe
+#import pandas # To create a dataframe
 import datetime
 
 
@@ -19,12 +19,22 @@ class PublicationObject(object):
 
 def create_PublicationObject(url):
     pubURL = url
+    cj = cookielib.CookieJar()
+    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
+    urllib2.install_opener(opener)    
+    opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:29.0) Gecko/20100101 Firefox/29.0')]
+    opener.open(pubURL)
+    f = opener.open(pubURL)
+    doc = html.parse(f)
+    print doc
 
     #headers = {'User-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.118 Safari/537.36'}
-    headers = {'User-agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:29.0) Gecko/20100101 Firefox/29.0'}
-    response = requests.get(pubURL, headers=headers, verify = False)
-    doc = html.fromstring(response.text) # parse it and create a document
-    print (response)
+    #headers = {'User-agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:29.0) Gecko/20100101 Firefox/29.0'}
+    #response = requests.get(pubURL, headers=headers, verify = False)
+    #doc = html.fromstring(response.text) # parse it and create a document
+    #print (response)
+
+
 
     #get paper title
     #paperNode = doc.find('.//div[@id="gsc_ccl"]')

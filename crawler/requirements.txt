@@ -5,10 +5,10 @@
 #
 # Note: The `lib` directory is added to `sys.path` by `appengine_config.py`.
 
-selenium==2.45.0
+#selenium==2.45.0
 requests==2.6.0
-lxml==3.4.2
-pandas==0.16.0
+lxml==2.3.5
+	
 
 Flask==0.10.1
 Flask-DebugToolbar==0.10.0
