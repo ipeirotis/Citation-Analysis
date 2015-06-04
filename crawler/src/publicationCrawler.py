@@ -5,11 +5,14 @@ import sys,urllib, urllib2, cookielib, traceback
 from lxml import html # This module will allow us to parse the returned HTML/XML
 #import pandas # To create a dataframe
 import datetime
+import MySQLdb
+
 
 
 #Publication Class definition
 class PublicationObject(object):
-    def __init__(self, title, authors, publicationDate, totalCitations, citationGraph):
+    def __init__(self, pubID, title, authors, publicationDate, totalCitations, citationGraph):
+        self.pubID = pubID
         self.title = title
         self.authors = authors
         self.publicationDate = publicationDate
@@ -26,7 +29,7 @@ def create_PublicationObject(url):
     opener.open(pubURL)
     f = opener.open(pubURL)
     doc = html.parse(f)
-    print doc
+    #print doc
 
     #headers = {'User-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.118 Safari/537.36'}
     #headers = {'User-agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:29.0) Gecko/20100101 Firefox/29.0'}
@@ -34,13 +37,14 @@ def create_PublicationObject(url):
     #doc = html.fromstring(response.text) # parse it and create a document
     #print (response)
 
-
+    #get publication ID
+    pubID = pubURL.split('citation_for_view=')[1]
 
     #get paper title
     #paperNode = doc.find('.//div[@id="gsc_ccl"]')
     titleNode = doc.find('.//*[@id="gsc_title"]')
     titleName = titleNode.text_content()
-    print(titleName)
+    #print(titleName)
 
     #paperInfoNode = doc.find('.//div[@id="gsc_table"]')
     #//*[@id="gsc_table"]/div[1]/div[2]
@@ -68,7 +72,7 @@ def create_PublicationObject(url):
         authors = doc.xpath('.//*[@id="gsc_table"]/div[%d]/div[2]//text()' % x)[0]
         #print(totalCitationsStr)
         authorsList = authors.split(', ')
-        print(authorsList)
+        #print(authorsList)
     else:
         authorsList = 'none - report Google!'
 
@@ -96,7 +100,7 @@ def create_PublicationObject(url):
     x = 0
     existDate = False
     while doc.xpath('.//*[@id="gsc_table"]/div[%d]/div[1]//text()' % (x+1)):
-        if doc.xpath('.//*[@id="gsc_table"]/div[%d]/div[1]//text()' % (x+1))[0] == 'Publication Date':
+        if doc.xpath('.//*[@id="gsc_table"]/div[%d]/div[1]//text()' % (x+1))[0] == 'Publication date':
             x += 1
             existDate = True
             break
@@ -104,24 +108,24 @@ def create_PublicationObject(url):
 
     if existDate:
         publicationDateStr = (doc.xpath('.//*[@id="gsc_table"]/div[%d]/div[2]//text()' % x))[0]
-        print(publicationDateStr)
+        #print(publicationDateStr)
         pD = publicationDateStr.split('/')
         if len(pD) == 1:
             #publicationDate = datetime.date(int(pD[0]))
             #print(publicationDate.strftime("%Y"))
             publicationDate = datetime.date(int(pD[0]), 1, 1)
-            print(publicationDate.strftime("%d/%m/%Y"))
+            #print(publicationDate.strftime("%d/%m/%Y"))
         elif len(pD) == 2:
             #publicationDate = datetime.date(int(pD[0]), int(pD[1]))
             #print(publicationDate.strftime("%m/%Y"))
             publicationDate = datetime.date(int(pD[0]), int(pD[1]),1)
-            print(publicationDate.strftime("%d/%m/%Y"))
+            #print(publicationDate.strftime("%d/%m/%Y"))
         else:
             publicationDate = datetime.date(int(pD[0]), int(pD[1]), int(pD[2]))
-            print(publicationDate.strftime("%d/%m/%Y"))
+            #print(publicationDate.strftime("%d/%m/%Y"))
     else:
         publicationDate = datetime.date(1900, 1, 1)
-        print(publicationDate.strftime("%d/%m/%Y"))
+        #print(publicationDate.strftime("%d/%m/%Y"))
 
 
 
@@ -143,7 +147,7 @@ def create_PublicationObject(url):
     else:
         totalCitations = 0
 
-    print("Total Citations are " + str(totalCitations))
+    #print("Total Citations are " + str(totalCitations))
 
 
     #get citations per year
@@ -153,7 +157,7 @@ def create_PublicationObject(url):
         a_style = doc.xpath('.//*[@id="gsc_graph_bars"]/a[1]')[0].get("style")
         z_index = int(a_style.split('z-index:')[1])
         latestYear = earliestYear + z_index - 1
-        print('latest year in citations chart is ' + str(latestYear))
+        #print('latest year in citations chart is ' + str(latestYear))
 
     citationsGraph = []
     x = 1
@@ -172,9 +176,8 @@ def create_PublicationObject(url):
         citationsGraph.append((cGYear, cGCitations))
         x += 1
 
-    for x in citationsGraph:
-        print(x)
+    #for x in citationsGraph:
+         #print(x)
 
-    pubObject = PublicationObject(titleName,authorsList,publicationDate,totalCitations,citationsGraph)
+    pubObject = PublicationObject(pubID,titleName,authorsList,publicationDate,totalCitations,citationsGraph)
     return pubObject
-

@@ -25,6 +25,10 @@ To install all dependencies, type:
 pip install -r requirements.txt -t src/lib/
 ```
 
+MySQL database
+--------------
+Access via localhost. Create username 'scholar' with password 'MjSwsqwtY5jjd3At'. Running the script, the database 'scholar_db' is created. 
+
 Command-line usage
 ------------------
 

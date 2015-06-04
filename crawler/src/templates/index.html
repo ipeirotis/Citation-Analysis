@@ -13,11 +13,17 @@
       {{ render_field(form.authorId) }}
       <div>&nbsp;</div>
       {{ form.submit }}
+      {{ form.retrieve }}
+    </fieldset>
+  </form>
+  <form id="retrieve-form" class="well"
+        action="{{ retrieve_act }}" method="get" accept-charset="utf-8"
+        style="display: none;">
+    <fieldset>
+      {#{{ render_field(retrieve.authorID) }}#}
+      <div>&nbsp;</div>
     </fieldset>
   </form>
 </div>
-{% if results is not none %}
-<hr />
-<pre>{{ results }}</pre>
-{% endif %}
+
 {% endblock content %}

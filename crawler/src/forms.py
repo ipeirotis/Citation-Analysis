@@ -7,6 +7,7 @@ from wtforms.csrf.session import SessionCSRF
 
 from main import app
 
+
 class BaseForm(Form):
     class Meta(DefaultMeta):
         csrf = app.config['CSRF_ENABLED']
@@ -17,6 +18,9 @@ class BaseForm(Form):
         def csrf_context(self):
             return session
 
+
 class AuthorForm(BaseForm):
     authorId = StringField('Author ID', [validators.Required()])
-    submit = SubmitField("Search")
+    submit = SubmitField("Fetch data from Google Scholar")
+    retrieve = SubmitField("Retrieve data from local Database")
+
