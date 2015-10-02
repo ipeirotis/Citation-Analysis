@@ -1,6 +1,13 @@
-*.class
+*~
+*.bak
+.DS_Store
 
-# Package Files #
-*.jar
-*.war
-*.ear
+*.pyc
+*.pyo
+
+# don't include secret keys
+src/secret.py
+
+# don't include third-party dependencies.
+src/lib/
+!src/lib/README.md
