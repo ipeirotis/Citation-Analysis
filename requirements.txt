@@ -1,0 +1,17 @@
+# This requirements file lists all third-party dependencies for this project.
+#
+# Run: `pip install -r requirements.txt -t src/lib/`
+# to install these dependencies in `src/lib/` subdirectory.
+#
+# Note: The `lib` directory is added to `sys.path` by `appengine_config.py`.
+
+#selenium==2.45.0
+requests==2.6.0
+lxml==2.3.5
+MySQL-python==1.2.4
+	
+
+Flask==0.10.1
+Flask-DebugToolbar==0.10.0
+flask-wtf==0.11
+jinja2==2.7.3
