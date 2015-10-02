@@ -25,7 +25,7 @@ def create_PublicationObject(url):
     cj = cookielib.CookieJar()
     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
     urllib2.install_opener(opener)    
-    opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:29.0) Gecko/20100101 Firefox/29.0')]
+    #opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Ubuntu Chromium/34.0.1847.116 Chrome/34.0.1847.116 Safari/537.36')]
     opener.open(pubURL)
     f = opener.open(pubURL)
     doc = html.parse(f)
@@ -62,7 +62,7 @@ def create_PublicationObject(url):
     x = 0
     existAuth = False
     while doc.xpath('.//*[@id="gsc_table"]/div[%d]/div[1]//text()' % (x+1)):
-        if doc.xpath('.//*[@id="gsc_table"]/div[%d]/div[1]//text()' % (x+1))[0] == 'Authors':
+        if doc.xpath('.//*[@id="gsc_table"]/div[%d]/div[1]//text()' % (x+1))[0] == 'Authors' or doc.xpath('.//*[@id="gsc_table"]/div[%d]/div[1]//text()' % (x+1))[0] == 'Inventors':
             x += 1
             existAuth = True
             break

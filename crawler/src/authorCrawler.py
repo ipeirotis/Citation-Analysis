@@ -8,12 +8,19 @@ from lxml import html # This module will allow us to parse the returned HTML/XML
 import sys, datetime
 import MySQLdb
 import publicationCrawler
+import time
+from google.appengine.api import urlfetch
+
+
+# fetch deadline 45 seconds (just to be sure)
+urlfetch.set_default_fetch_deadline(45)
+
 
 
 #Author Class Definition
 class AuthorObject(object):
     def __init__(self, authorID, name, totalCitations, H_index, i10_index, coAuthors
-        ,citationsPerYear, publications, publications_wo_date, lastTimeRetrieved):
+        ,citationsPerYear, publications, lastTimeRetrieved):
         # PUBLICATIONS ARE STUB!! haven't clearly understood what we need out of it, apart from the urls.....
         # lastTimeRetrieved also a stub..
         self.authorID = authorID
@@ -24,7 +31,7 @@ class AuthorObject(object):
         self.coAuthors = coAuthors
         self.citationsPerYear = citationsPerYear
         self.publications = publications
-        self.publications_wo_date = publications_wo_date
+        #self.publications_wo_date = publications_wo_date
         self.lastTimeRetrieved = lastTimeRetrieved
 
 def debug(*whatever):
@@ -40,7 +47,7 @@ def authorCrawler(authorID, pubLimit=None):
     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
     urllib2.install_opener(opener)    
     url = "https://scholar.google.com/citations?hl=en&user=%s&view_op=list_works&sortby=pubdate&pagesize=100" % (authorID)
-    opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:29.0) Gecko/20100101 Firefox/29.0')]
+    #opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Ubuntu Chromium/34.0.1847.116 Chrome/34.0.1847.116 Safari/537.36')]
     opener.open(url)
     f = opener.open(url)
     doc = html.parse(f)
@@ -57,7 +64,7 @@ def authorCrawler(authorID, pubLimit=None):
     #debug(response)
 
     # Open database connection
-    # db = MySQLdb.connect("localhost","root","gu1t@rri5ta")
+    #db = MySQLdb.connect("localhost","root","gu1t@rri5ta")
 
 
     # Define your production Cloud SQL instance information.
@@ -77,7 +84,10 @@ def authorCrawler(authorID, pubLimit=None):
 
     # prepare a cursor object using cursor() method
     cursor = db.cursor()
+    cursor.execute("USE scholar_db ;")
+    db.commit()
 
+    '''
     cursor.execute("SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;")
     cursor.execute("SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;")
     cursor.execute("SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='TRADITIONAL,ALLOW_INVALID_DATES';")
@@ -105,8 +115,8 @@ def authorCrawler(authorID, pubLimit=None):
                     CONSTRAINT fk_coauthors_authors1 \
                     FOREIGN KEY (authors_author_id) \
                     REFERENCES scholar_db.authors (author_id) \
-                    ON DELETE NO ACTION \
-                    ON UPDATE NO ACTION) \
+                    ON DELETE CASCADE \
+                    ON UPDATE CASCADE) \
                     ENGINE = InnoDB;")
 
 
@@ -119,8 +129,8 @@ def authorCrawler(authorID, pubLimit=None):
                     CONSTRAINT fk_citations_per_year_authors1 \
                     FOREIGN KEY (authors_author_id) \
                     REFERENCES scholar_db.authors (author_id) \
-                    ON DELETE NO ACTION \
-                    ON UPDATE NO ACTION) \
+                    ON DELETE CASCADE \
+                    ON UPDATE CASCADE) \
                     ENGINE = InnoDB;")
 
 
@@ -136,8 +146,8 @@ def authorCrawler(authorID, pubLimit=None):
                     CONSTRAINT fk_publications_authors1 \
                     FOREIGN KEY (authors_author_id) \
                     REFERENCES scholar_db.authors (author_id) \
-                    ON DELETE NO ACTION \
-                    ON UPDATE NO ACTION) \
+                    ON DELETE CASCADE \
+                    ON UPDATE CASCADE) \
                     ENGINE = InnoDB;")
 
 
@@ -150,8 +160,8 @@ def authorCrawler(authorID, pubLimit=None):
                     CONSTRAINT fk_pub_authors_publications1 \
                     FOREIGN KEY (publications_publication_id) \
                     REFERENCES scholar_db.publications (publication_id) \
-                    ON DELETE NO ACTION \
-                    ON UPDATE NO ACTION) \
+                    ON DELETE CASCADE \
+                    ON UPDATE CASCADE) \
                     ENGINE = InnoDB;")
 
 
@@ -160,12 +170,24 @@ def authorCrawler(authorID, pubLimit=None):
                     year INT NOT NULL, \
                     citations INT NULL, \
                     publications_publication_id VARCHAR(45) NOT NULL, \
+                    PRIMARY KEY (year, publications_publication_id), \
                     INDEX fk_pub_citations_per_year_publications1_idx (publications_publication_id ASC), \
                     CONSTRAINT fk_pub_citations_per_year_publications1 \
                     FOREIGN KEY (publications_publication_id) \
                     REFERENCES scholar_db.publications (publication_id) \
-                    ON DELETE NO ACTION \
-                    ON UPDATE NO ACTION) \
+                    ON DELETE CASCADE \
+                    ON UPDATE CASCADE) \
+                    ENGINE = InnoDB;")
+
+    cursor.execute("CREATE TABLE IF NOT EXISTS scholar_db.bare_pub_ids( \
+                    publication_id VARCHAR(45) NOT NULL, \
+                    authors_author_id VARCHAR(45) NOT NULL, \
+                    PRIMARY KEY (publication_id), \
+                    CONSTRAINT fk_bare_pub_ids_authors1 \
+                    FOREIGN KEY (authors_author_id) \
+                    REFERENCES scholar_db.authors (author_id) \
+                    ON DELETE CASCADE \
+                    ON UPDATE CASCADE) \
                     ENGINE = InnoDB;")
 
 
@@ -174,7 +196,7 @@ def authorCrawler(authorID, pubLimit=None):
     cursor.execute("SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;")
 
     db.commit()
-
+    '''
     #db.close()
 
 
@@ -182,6 +204,8 @@ def authorCrawler(authorID, pubLimit=None):
     authorNode = doc.find('.//div[@id="gsc_prf_in"]')
     authorName = authorNode.text_content()
     debug(authorName)
+
+    #print(authorName)
 
     #check if authorObject exists in database
     #
@@ -216,6 +240,9 @@ def authorCrawler(authorID, pubLimit=None):
     debug(h_index)
     debug(i10_index)
 
+    #print(h_index)
+    #print(i10_index)
+
     #get co-authorsID's
     coAuthorsNode = doc.find('.//div[@id="gsc_rsb_co"]')
     debug(coAuthorsNode)
@@ -231,7 +258,9 @@ def authorCrawler(authorID, pubLimit=None):
         urls = [lnk.get("href") for lnk in coAuthors]
         debug(urls)
         for url in urls:
-            coAuthorIDs.append(url[16:len(url)-6])
+            #coAuthorIDs.append(url[16:len(url)-6])
+            coAuthorIDs.append((url.split('user=')[1]).split('&hl')[0])
+            #print('coauthor ID :  ' + url[16:len(url)-6])
         debug(coAuthorIDs)
 
     ##Do we also want the co-authors' names?
@@ -252,16 +281,20 @@ def authorCrawler(authorID, pubLimit=None):
     #debug(response)
     #debug(doc_citations.text_content())
     #debug(doc_citations.xpath('.//*[@id="gsc_md_hist_b"]')[0])   #returns a div element
-    doc_popup = doc_citations.xpath('.//*[@id="gsc_md_hist_b"]')[0]
 
-    years = [int(x.text) for x in
-             doc_popup.xpath('.//span[@class="gsc_g_t"]')]
     citationsPerYear = []
-    for a in doc_popup.xpath('.//a[@class="gsc_g_a"]'):
-        i = int(a.get("style").split('z-index:')[1])
-        year = years[-i]
-        citations = int(a.xpath('./span[@class="gsc_g_al"]')[0].text)
-        citationsPerYear.append((year, citations))
+    if (doc_citations.xpath('.//*[@id="gsc_md_hist_b"]')):
+        doc_popup = doc_citations.xpath('.//*[@id="gsc_md_hist_b"]')[0]
+
+        years = [int(x.text) for x in
+                 doc_popup.xpath('.//span[@class="gsc_g_t"]')]
+        for a in doc_popup.xpath('.//a[@class="gsc_g_a"]'):
+            i = int(a.get("style").split('z-index:')[1])
+            year = years[-i]
+            citations = int(a.xpath('./span[@class="gsc_g_al"]')[0].text)
+            citationsPerYear.append((year, citations))
+
+        #print(str(citations) + ' citations in ' + str(year))
 
     for x in citationsPerYear:
         debug(x)
@@ -269,8 +302,8 @@ def authorCrawler(authorID, pubLimit=None):
     #get publications
     x = 1
     publications = []
-    publications_wo_date = []
-    pubs_wo_date = 0
+    #publications_wo_date = []
+    #pubs_wo_date = 0
     '''
     while doc.xpath('.//*[@id="gsc_a_b"]/tr[%d]/td[1]/a' % (x)):
         pubUrl = 'https://scholar.google.com' + doc.xpath('.//*[@id="gsc_a_b"]/tr[%d]/td[1]/a' % (x))[0].get("href")
@@ -284,75 +317,159 @@ def authorCrawler(authorID, pubLimit=None):
         x += 1
     '''
 
+
     while doc.xpath('.//*[@id="gsc_a_b"]/tr[%d]/td[1]/a' % (x)):
         pubUrl = 'https://scholar.google.com' + doc.xpath('.//*[@id="gsc_a_b"]/tr[%d]/td[1]/a' % (x))[0].get("href")
+        pubID = pubUrl.split('citation_for_view=')[1]
+        #print(pubID)
+        publications.append(pubID)
+        x+=1
         #debug('pubUrl is ' + pubUrl)
-        pubObject = publicationCrawler.create_PublicationObject(pubUrl)
-        debug(pubObject.title)
-        debug(pubObject.publicationDate.year)
-        if pubObject.publicationDate.year == 1900:
-            publications_wo_date.append(pubObject)
-        else:
-            publications.append(pubObject)
-        x += 1
-        if pubLimit is not None and x > pubLimit:
-            break
-    '''
+        #pubObject = publicationCrawler.create_PublicationObject(pubUrl)
+        #debug(pubObject.title)
+        #debug(pubObject.publicationDate.year)
+        #if pubObject.publicationDate.year == 1900:
+        #    publications_wo_date.append(pubObject)
+        #else:
+        #    publications.append(pubObject)
+        #x += 1
+        #if pubLimit is not None and x > pubLimit:
+        #    break
+
+
+
     cstart = 0
-    while not doc.xpath('.//button[@id="gsc_bpf_next"]')[0].get("disabled class"):
-        cstart += 100
+    w = 1
+    #print('cstart is %d' % cstart)
+    #print('Initial doc is:')
+    #print(doc)
+    while not doc.xpath('.//button[@id="gsc_bpf_next"]')[0].get("disabled"):
+        cstart = cstart + 100
+        #print('cstart is %d' % cstart)
         url = "https://scholar.google.com/citations?hl=en&user=%s&view_op=list_works&sortby=pubdate&cstart=%d&pagesize=100"  % (authorID, cstart)
-        headers = {'User-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.118 Safari/537.36'}
-        response = requests.get(url, headers=headers, verify = False)
-        doc = html.fromstring(response.text) # parse it and create a document
-        debug(response)
+        #opener.open(url)
+        f = opener.open(url)
+        doc = html.parse(f)
+        #print('doc is:')
+        #print(doc)
+        x = 1
+        while doc.xpath('.//*[@id="gsc_a_b"]/tr[%d]/td[1]/a' % (x)):
+            print('while no. %d' % w)
+            pubUrl = 'https://scholar.google.com' + doc.xpath('.//*[@id="gsc_a_b"]/tr[%d]/td[1]/a' % (x))[0].get("href")
+            pubID = pubUrl.split('citation_for_view=')[1]
+            #print(pubID)
+            publications.append(pubID)
+            x+=1
+            w+=1
+
+
     '''
+    x = 1
+    cstart = 100
+    url = "https://scholar.google.com/citations?hl=en&user=%s&view_op=list_works&sortby=pubdate&cstart=%d&pagesize=100"  % (authorID, cstart)
+    opener.open(url)
+    f = opener.open(url)
+    doc = html.parse(f)
+    while doc.xpath('.//*[@id="gsc_a_b"]/tr[%d]/td[1]/a' % (x)):
+        pubUrl = 'https://scholar.google.com' + doc.xpath('.//*[@id="gsc_a_b"]/tr[%d]/td[1]/a' % (x))[0].get("href")
+        pubID = pubUrl.split('citation_for_view=')[1]
+        #print(pubID)
+        publications.append(pubID)
+        x+=1
+
+    x = 1
+    cstart = 200
+    url = "https://scholar.google.com/citations?hl=en&user=%s&view_op=list_works&sortby=pubdate&cstart=%d&pagesize=100"  % (authorID, cstart)
+    opener.open(url)
+    f = opener.open(url)
+    doc = html.parse(f)
+    while doc.xpath('.//*[@id="gsc_a_b"]/tr[%d]/td[1]/a' % (x)):
+        pubUrl = 'https://scholar.google.com' + doc.xpath('.//*[@id="gsc_a_b"]/tr[%d]/td[1]/a' % (x))[0].get("href")
+        pubID = pubUrl.split('citation_for_view=')[1]
+        #print(pubID)
+        publications.append(pubID)
+        x+=1
+
+    x = 1
+    cstart = 300
+    url = "https://scholar.google.com/citations?hl=en&user=%s&view_op=list_works&sortby=pubdate&cstart=%d&pagesize=100"  % (authorID, cstart)
+    opener.open(url)
+    f = opener.open(url)
+    doc = html.parse(f)
+    while doc.xpath('.//*[@id="gsc_a_b"]/tr[%d]/td[1]/a' % (x)):
+        pubUrl = 'https://scholar.google.com' + doc.xpath('.//*[@id="gsc_a_b"]/tr[%d]/td[1]/a' % (x))[0].get("href")
+        pubID = pubUrl.split('citation_for_view=')[1]
+        #print(pubID)
+        publications.append(pubID)
+        x+=1
+    '''
+
     #set lastTimeRetrieved
     lastTimeRetrieved = datetime.datetime.now()
     debug(lastTimeRetrieved)
 
     #create author object
-    authorObj = AuthorObject(authorID, authorName, totalCitations, h_index, i10_index, coAuthorIDs, citationsPerYear, publications, publications_wo_date, lastTimeRetrieved)
+    authorObj = AuthorObject(authorID, authorName, totalCitations, h_index, i10_index, coAuthorIDs, citationsPerYear, publications, lastTimeRetrieved)
 
 
-
+    print('author object created')
+    print('gathered %d publications' % len(publications))
 
     ##### TO-DO :
     # IF AUTHOR ALREADY EXISTS IN DATABASE, USE UPDATE!! (check in beginning..)
 
+
     # Prepare SQL query to INSERT a record into the database.
-    sql = """INSERT INTO authors(author_id, name, total_citations, h_index, i10_index, last_time_retrieved) \
-           VALUES ('%s', '%s', %d, %d, %d, '%s')""" % \
-           (authorID, authorName, totalCitations, h_index, i10_index, lastTimeRetrieved.strftime('%Y-%m-%d %H:%M:%S'))
+    sql = """INSERT INTO `authors` (`author_id`, `name`, `total_citations`, `h_index`, `i10_index`, `last_time_retrieved`) \
+           VALUES (%s, %s, %s, %s, %s, %s) ON DUPLICATE KEY  UPDATE `author_id` = %s, `name` = %s, `total_citations` = %s, \
+           `h_index` = %s, `i10_index` = %s, `last_time_retrieved` = %s""" \
+          #% \
+          #(authorID, authorName, totalCitations, h_index, i10_index, lastTimeRetrieved.strftime('%Y-%m-%d %H:%M:%S'))
 
     try:
-       cursor.execute(sql)
-       db.commit()
-    except:
-       db.rollback()
-
+        cursor.execute(sql, (authorID, authorName.encode('utf-8'), totalCitations, h_index, i10_index, lastTimeRetrieved.strftime('%Y-%m-%d %H:%M:%S'),\
+                             authorID, authorName.encode('utf-8'), totalCitations, h_index, i10_index, lastTimeRetrieved.strftime('%Y-%m-%d %H:%M:%S')))
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print('insert author')
+        print e
 
     for co_ID in coAuthorIDs:
-        sql = "insert into coauthors(coauthor_id, authors_author_id) select '%s', '%s' from authors limit 1;" % \
-               (co_ID, authorID)
-
+        sql = "insert into coauthors(coauthor_id, authors_author_id) select %s, %s from authors limit 1;"
         try:
-           cursor.execute(sql)
-           db.commit()
+            cursor.execute(sql, (co_ID, authorID))
+            db.commit()
         except:
             db.rollback()
+            print('insert coauthor')
 
     for citation in citationsPerYear:
-        sql = "insert into citations_per_year(year, citations, authors_author_id) select %d, %d, '%s' from authors limit 1;" % \
-               (citation[0], citation[1], authorID)
+        sql = "insert into citations_per_year(year, citations, authors_author_id) select %s, %s, %s from authors limit 1;" \
+              #% \
+              #(citation[0], citation[1], authorID)
 
         try:
-           cursor.execute(sql)
-           db.commit()
+            cursor.execute(sql, (citation[0], citation[1], authorID))
+            db.commit()
         except:
-           db.rollback()
+            db.rollback()
+            print('insert citations per year')
 
 
+    #publications += publications_wo_date
+    for pub in publications:
+        sql = "insert into bare_pub_ids(publication_id, authors_author_id) select %s, %s from authors limit 1;"
+        #% (pub, authorID)
+
+        try:
+            cursor.execute(sql, (pub, authorID))
+            db.commit()
+        except:
+            db.rollback()
+            print('insert bare pubs')
+    """
+    publications += publications_wo_date
     for pub in publications:
         sql = "insert into publications(publication_id, title, date, total_citations, authors_author_id) \
                select '%s', '%s', '%s', %d, '%s' from authors limit 1;" % \
@@ -384,7 +501,7 @@ def authorCrawler(authorID, pubLimit=None):
                db.commit()
             except:
                db.rollback()
-
+    """
     # disconnect from server
     db.close()
 
