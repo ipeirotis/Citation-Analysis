@@ -1,0 +1,6 @@
+queue:
+- name: AuthorsQueue
+  rate: 5/m
+
+- name: PublicationsQueue
+  rate: 5/m
