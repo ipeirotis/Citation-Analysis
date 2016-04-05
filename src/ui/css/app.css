@@ -1,0 +1,25 @@
+body {
+  font-family: Courier;
+  font-size: 14px;
+  min-height: 2000px;
+  padding-top: 70px;
+}
+.table.borderless td,
+.table.borderless th {
+  border: none;
+}
+.multi-level select {
+  display: block;
+  margin-top: 10px;
+}
+.table.inner {
+  width: 90%;
+}
+.table.inner.borderless td,
+.table.inner.borderless th {
+  border: none;
+}
+.table.inner>tbody>tr>td {
+  border-top: none;
+  border-bottom: 1px solid #DDD;
+}

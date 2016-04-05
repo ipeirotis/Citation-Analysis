@@ -1,0 +1,5 @@
+cron:
+- url: /author/refresh
+  schedule: every day 12:00
+- url: /publication/refresh
+  schedule: every day 0:00
