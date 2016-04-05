@@ -1,6 +1,0 @@
-queue:
-- name: AuthorsQueue
-  rate: 1/m
-
-- name: PublicationsQueue
-  rate: 1/m
