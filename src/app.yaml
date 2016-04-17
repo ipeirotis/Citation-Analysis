@@ -27,6 +27,10 @@ handlers:
   script: main.app
 - url: /publication/crawl
   script: main.app
+- url: /author/batch-crawl
+  script: main.app
+- url: /publication/batch-crawl
+  script: main.app
 - url: /author/refresh
   script: main.app
 - url: /publication/refresh

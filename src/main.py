@@ -171,6 +171,8 @@ def welcome():
 
 import crawlers
 
+import batch_crawlers
+
 import refreshers
 
 if __name__ == '__main__':

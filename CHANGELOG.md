@@ -1,4 +1,4 @@
-##### [ Version 6 ] - 05.04.2016
+##### [ Version 6 ] - 17.04.2016
 
 * Database connection pool is used.
 * Authors and publications task queues are separated.
@@ -14,6 +14,9 @@
 * The number of authors that belong to each organization is shown in the tree
   view.
 * Optimize the queries behind GET ROOT ORGANIZATIONS.
+* Optimize the refresh process.
+* Fix bugs in the crawling process.
+* Crawl authors and publications in batches.
 
 ##### [ Version 5 ] - 20.03.2016
 

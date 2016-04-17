@@ -21,7 +21,7 @@ def crawl_author():
   # The ID of the author in Google Scholar.
   scholar_id = request.form['scholar_id']
 
-  print 'Crawl author ' + scholar_id
+  print 'Crawl author ' + scholar_id + '.'
 
   # Retrieve the author with that ID (if any).
   author = Author.query.filter_by(scholar_id = scholar_id).first()
@@ -34,11 +34,16 @@ def crawl_author():
 
   url = 'https://scholar.google.com/citations';
   params = urlencode({'hl': 'en', 'view_op': 'list_works', 'sortby': 'pubdate',
-                      'user': scholar_id, 'cstart': 1, 'pagesize': 2})
+                      'user': scholar_id, 'cstart': 0, 'pagesize': 20})
   req = Request(url + '?' + params)
   opener.open(req)
   res = opener.open(req)
   doc = html.parse(res)
+
+  no_content = doc.xpath('.//div[contains(text(), "Sorry, no content found for this URL")]')
+  if len(no_content):
+    print 'Author ' + scholar_id + ' not found.'
+    return 'Done.'
 
   author.scholar_id = scholar_id
 
@@ -79,7 +84,7 @@ def crawl_author():
   if nhistogram is not None:
     years = [x.text for x in nhistogram.xpath('.//span[@class="gsc_g_t"]')]
     for a in nhistogram.xpath('.//a[@class="gsc_g_a"]'):
-      i = int(a.get("style").split('z-index:')[1])
+      i = int(a.get('style').split('z-index:')[1])
       year = int(years[-i])
       citations_per_year = AuthorCitationsPerYear.query.filter_by(author_id = author.id, year = year).first()
       if citations_per_year is None:
@@ -108,7 +113,7 @@ def crawl_author():
 
   # The publications.
   author_publications = []
-  cstart = 1
+  cstart = 0
   pagesize = 100
   while True:
     params = urlencode({'hl': 'en', 'view_op': 'list_works', 'sortby': 'pubdate',
@@ -120,6 +125,10 @@ def crawl_author():
 
     for tr in doc.xpath('.//tr[@class="gsc_a_tr"]'):
       a = tr.find('.//td[@class="gsc_a_t"]//a')
+      # NOTE: When there are no publications, there is a single tr.
+      # <tr class="gsc_a_tr"><td class="gsc_a_e" colspan="3">There are no articles in this profile.</td></tr>
+      if a is None:
+        continue
       purl = a.get('href')
 
       # The ID of the publication in Google Scholar.
@@ -166,7 +175,7 @@ def crawl_author():
   db.session.commit()
 
   print 'Crawled author ' + scholar_id + '.'
-  return "Done."
+  return 'Done.'
 
 @app.route('/publication/crawl', methods=['POST'])
 def crawl_publication():
@@ -177,7 +186,7 @@ def crawl_publication():
   # The ID of the publication in Google Scholar.
   scholar_id = request.form['scholar_id']
 
-  print 'Crawl publication ' + scholar_id
+  print 'Crawl publication ' + scholar_id + '.'
 
   url = 'https://scholar.google.com/citations';
 
@@ -236,7 +245,7 @@ def crawl_publication():
   if nhistogram is not None:
     years = [x.text for x in nhistogram.xpath('.//span[@class="gsc_g_t"]')]
     for a in nhistogram.xpath('.//a[@class="gsc_g_a"]'):
-      i = int(a.get("style").split('z-index:')[1])
+      i = int(a.get('style').split('z-index:')[1])
       year = int(years[-i])
       citations_per_year = PublicationCitationsPerYear.query.filter_by(publication_id = publication.id, year = year).first()
       if citations_per_year is None:
@@ -253,4 +262,4 @@ def crawl_publication():
   db.session.commit()
 
   print 'Crawled publication ' + scholar_id + '.'
-  return "Done."
+  return 'Done.'
